@@ -1,9 +1,16 @@
 ﻿# grade-assignment
 
 param(
+    [string]$root="c:\git",
+    [string]$assignmentName,
     [string]$commitUrl,
-    [string]$student
+    [string]$student  
 )
+
+$assignmentFolder = (join-path $root $assignmentName);
+if((test-path $assignmentFolder -PathType Container) -eq $false){
+    new-item $assignmentFolder -ItemType Container
+}
 
 if($commitUrl.Contains("/commit")){
     $indexOfCommit = $commitUrl.IndexOf("/commit");
@@ -16,7 +23,7 @@ else { # just a repo url
 }
 write-host "Taking $repo @ $hash for $student"
 
-set-location c:\git
+set-location $assignmentFolder
 if(test-path $student -PathType Container){
     remove-item $student -Recurse -Force
 }

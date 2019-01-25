@@ -1,13 +1,13 @@
 ﻿# grade-assignment
 
 param(
-    [string]$root="c:\git",
-    [string]$assignmentName,
+    [string]$assignmentFolder,
+    [switch]$openInVisualStudio,
+    [switch]$openInCode,
     [string]$commitUrl,
     [string]$student  
 )
 
-$assignmentFolder = (join-path $root $assignmentName);
 if((test-path $assignmentFolder -PathType Container) -eq $false){
     new-item $assignmentFolder -ItemType Container
 }
@@ -15,7 +15,7 @@ if((test-path $assignmentFolder -PathType Container) -eq $false){
 if($commitUrl.Contains("/commit")){
     $indexOfCommit = $commitUrl.IndexOf("/commit");
     $repo = $commitUrl.Substring(0,$indexOfCommit);
-    $hash = $commitUrl.Substring($indexOfCommit+8);
+    $hash = $commitUrl.Substring($indexOfCommit+8, 20);
 }
 else { # just a repo url
     $repo = $commitUrl
@@ -33,4 +33,10 @@ if($hash -ne $null){
     git checkout $hash
 }
 
-gci *.sln -Recurse | select-object -First 1 | %{Start-Process $_}
+if($openInVisualStudio) {
+    gci *.sln -Recurse | select-object -First 1 | %{Start-Process $_}
+}
+
+if($openInCode) {
+    code .
+}

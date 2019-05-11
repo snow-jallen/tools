@@ -2,7 +2,18 @@
 param (
     [Parameter(mandatory=$true)][Alias("projectName")]
     [string]$name,
-    [string]$solutionName
+    [string]$solutionName,
+    # Specifies a path to one or more locations.
+    [Parameter(Mandatory=$false,
+               Position=0,
+               ParameterSetName="ParameterSetName",
+               ValueFromPipeline=$true,
+               ValueFromPipelineByPropertyName=$true,
+               HelpMessage="Path to place the solution folder")]
+    [Alias("PSPath")]
+    [ValidateNotNullOrEmpty()]
+    [string[]]
+    $filePath
 )
 
 $toolsDir = split-path $MyInvocation.InvocationName -resolve
@@ -14,7 +25,7 @@ if($solutionName -eq "") {
 #Step 0 - Preconditions
 $containersNamedPg = @(docker ps -f name=pg)
 $pgContainerExists = ($containersNamedPg.length -gt 1)
-if($pgContainerExists) {
+if($pgContainerExists -eq "pg") {
     write-host "A container named 'pg' already exists.  Should I kill it?" -foreground Red
     $ans = read-host
     if($ans.tolower()[0] -eq 'y') {
@@ -22,6 +33,16 @@ if($pgContainerExists) {
     } else {
         return;
     }
+} 
+#check if docker running
+$dockerRunning = docker run --rm alpine echo $((40+2))
+if ($dockerRunning -ne 42){
+    Write-Error "Docker desktop not running"
+    return
+}
+#change path if option set
+if ($filePath){
+    Set-Location -Path $($filePath)
 }
 
 #Step 1 - Create new website & solution from template

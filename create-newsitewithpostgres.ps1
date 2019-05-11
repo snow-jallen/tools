@@ -25,7 +25,7 @@ if($solutionName -eq "") {
 #Step 0 - Preconditions
 $containersNamedPg = @(docker ps -f name=pg)
 $pgContainerExists = ($containersNamedPg.length -gt 1)
-if($pgContainerExists -eq "pg") {
+if($pgContainerExists) {
     write-host "A container named 'pg' already exists.  Should I kill it?" -foreground Red
     $ans = read-host
     if($ans.tolower()[0] -eq 'y') {

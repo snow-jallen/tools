@@ -36,6 +36,12 @@ if($pgContainerExists) {
     } else {
         return;
     }
+} 
+#check if docker running
+$dockerRunning = docker run --rm alpine echo $((40+2))
+if ($dockerRunning -ne 42){
+    Write-Error "Docker desktop not running"
+    return
 }
 
 write-step "Create new website & solution from template"

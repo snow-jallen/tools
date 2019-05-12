@@ -2,14 +2,28 @@
 param (
     [Parameter(mandatory=$true)][Alias("projectName")]
     [string]$name,
+    [string]$parentFolder=".",
     [string]$solutionName
 )
+
+function write-step($logMessage)
+{
+    write-host ""
+    write-host "*****************************************************************"
+    write-host "***   $logMessage"
+    write-host "*****************************************************************"
+    write-host ""
+}
 
 $toolsDir = split-path $MyInvocation.InvocationName -resolve
 
 if($solutionName -eq "") {
     $solutionName = $name
 }
+
+$parentFolder = resolve-path $parentFolder;
+write-step "Creating $solutionName\$name in $parentFolder"
+set-location $parentFolder
 
 #Step 0 - Preconditions
 $containersNamedPg = @(docker ps -f name=pg)
@@ -24,57 +38,53 @@ if($pgContainerExists) {
     }
 }
 
-#Step 1 - Create new website & solution from template
-write-progress "Create new website & solution from template"
+write-step "Create new website & solution from template"
 dotnet new sln --name $solutionName --output $solutionName
 set-location $solutionName
 dotnet new mvc --auth Individual --name $name --output $name
 dotnet sln add $name
 set-location $name
 
-#Step 2 - Delete existing migrations
-write-progress "Delete existing migrations"
+write-step "Delete existing migrations"
 remove-item .\Data\Migrations\ -Recurse -Force
 
-#Step 3 - Add Npgsql package
-write-progress "Add Npgsql package"
+write-step "Delete sqlite database file from template"
+remove-item .\app.db
+
+write-step "Add Npgsql package"
 dotnet add package npgsql.entityframeworkcore.postgresql
 
-#Step 4 - Change startup.cs
-write-progress "Change startup.cs"
+write-step "Change startup.cs"
 (get-content .\Startup.cs).Replace("UseSqlite","UseNpgsql") | set-content .\Startup.cs
 
-#Step 5 - Start up database container
-write-progress "Start up database container"
+write-step "Start up database container"
 $startScript = join-path $toolsDir "start-postgres.ps1"
 $connectionString = & $startScript
 write-host "Connection String: $connectionString"
 
-#Step 6 - Replace connection string
-write-progress "Replace connection string"
+write-step "Replace connection string"
 $json = get-content .\appsettings.json | ConvertFrom-Json
 $json.ConnectionStrings.DefaultConnection = $connectionString
 $json | convertto-json | set-content .\appsettings.json
 
-#Step 7 - Update the database
-write-progress "Update the database"
+write-step "Update the database"
 dotnet ef migrations add InitialVersion
 dotnet ef database Update
 
-#Step 8 - Dump the database
-write-progress "Dump the database"
+write-step "Dump the database"
 $dumpScript = join-path $toolsDir "dump-postgres.ps1"
 & $dumpScript
 
-#Step 9 - Create git repo
-write-progress "Create git repo"
-dotnet tool install -g dotnet-gitignore
+write-step "Create git repo"
+$gitignoreToolInstalled = (dotnet tool list -g | Where-Object {$_.contains("gitignore")} | measure-object).count -eq 1
+if($gitignoreToolInstalled -eq $false){
+    dotnet tool install -g dotnet-gitignore
+}
 set-location ".."
 dotnet gitignore
 git init
 git add .
 git commit -m "Initial commit"
 
-#Step 10 - Start the solution
-write-progress "Starting solution..."
+write-step "Starting solution..."
 start-process "$solutionName.sln"

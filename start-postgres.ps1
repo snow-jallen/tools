@@ -21,7 +21,7 @@ if($pgContainerExists -eq $false) {
 }
 
 # Check 2 - make sure you can query it
-$rows = docker exec pg psql -U postgres -c "\l"
+$rows = docker exec $containerName psql -U postgres -c "\l"
 if($rows.count -le 3) {
     write-error "This doesn't smell right - not enough databases listed"
     return -1;

@@ -1,10 +1,12 @@
-
+[cmdletbinding()]
 param(
     [string]$containerName="pg",
     [string]$pgPassword='P@ssword1',
     [string]$initializationScript="./dbdefinition.sql",
     [int]$localPort=5432
 )
+write-verbose "containerName=$containerName; initializationScript=$initializationScript; localPort=$localPort"
+
 if(test-path $initializationScript) {
     $initializationPath = resolve-path $initializationScript
 }
@@ -12,7 +14,8 @@ docker run --name $containerName -v "$($initializationPath):/docker-entrypoint-i
 
 # Make sure that the database came up ok
 # Check 1 - is the container up and running
-start-sleep -Seconds 2
+Write-Verbose "Waiting for container to come up..."
+start-sleep -Seconds 5
 $containersNamedPg = @(docker ps -f name=$containerName)
 $pgContainerExists = ($containersNamedPg.length -gt 1)
 if($pgContainerExists -eq $false) {

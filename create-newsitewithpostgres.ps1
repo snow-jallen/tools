@@ -3,7 +3,10 @@ param (
     [Parameter(mandatory=$true)][Alias("projectName")]
     [string]$name,
     [string]$parentFolder=".",
-    [string]$solutionName
+    [string]$solutionName=$name,
+    [string]$dbContainerName="pg",
+    [int]$dbPort=5432,
+    [string]$toolsDir="c:\git\tools"
 )
 
 function write-step($logMessage)
@@ -15,8 +18,6 @@ function write-step($logMessage)
     write-host ""
 }
 
-$toolsDir = split-path $MyInvocation.InvocationName -resolve
-
 if($solutionName -eq "") {
     $solutionName = $name
 }
@@ -26,13 +27,13 @@ write-step "Creating $solutionName\$name in $parentFolder"
 set-location $parentFolder
 
 #Step 0 - Preconditions
-$containersNamedPg = @(docker ps -f name=pg)
+$containersNamedPg = @(docker ps -f name=$dbContainerName)
 $pgContainerExists = ($containersNamedPg.length -gt 1)
 if($pgContainerExists) {
-    write-host "A container named 'pg' already exists.  Should I kill it?" -foreground Red
+    write-host "A container named '$dbContainerName' already exists.  Should I kill it?" -foreground Red
     $ans = read-host
     if($ans.tolower()[0] -eq 'y') {
-        docker rm pg -f
+        docker rm $dbContainerName -f
     } else {
         return;
     }
@@ -43,6 +44,25 @@ if ($dockerRunning -ne 42){
     Write-Error "Docker desktop not running"
     return
 }
+#check if desired port is in use
+$portInUse = Get-NetTCPConnection | Where-Object LocalPort -eq $dbPort
+if($portInUse -ne $null -or $portInUse.Length -gt 0) {
+    write-error "Port $dbPort in use: $portInUse"
+    return
+}
+
+#$toolsDir = split-path $MyInvocation.InvocationName -resolve
+if((test-path $toolsDir -PathType Container) -eq $false){
+    write-error "Unable to locate toolsDir at $toolsDir"
+    return
+}
+
+write-host "psscriptroot is $PSScriptRoot"
+
+write-step "Start up database container"
+$startScript = join-path $toolsDir "start-postgres.ps1"
+$connectionString = & $startScript -containerName $dbContainerName -localPort $dbPort
+write-host "Connection String: $connectionString"
 
 write-step "Create new website & solution from template"
 dotnet new sln --name $solutionName --output $solutionName
@@ -62,11 +82,6 @@ dotnet add package npgsql.entityframeworkcore.postgresql
 
 write-step "Change startup.cs"
 (get-content .\Startup.cs).Replace("UseSqlite","UseNpgsql") | set-content .\Startup.cs
-
-write-step "Start up database container"
-$startScript = join-path $toolsDir "start-postgres.ps1"
-$connectionString = & $startScript
-write-host "Connection String: $connectionString"
 
 write-step "Replace connection string"
 $json = get-content .\appsettings.json | ConvertFrom-Json

@@ -22,6 +22,8 @@ if($solutionName -eq "") {
     $solutionName = $name
 }
 
+dotnet tool install -g dotnet-ef 
+
 $parentFolder = resolve-path $parentFolder;
 write-step "Creating $solutionName\$name in $parentFolder"
 set-location $parentFolder

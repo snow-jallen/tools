@@ -69,7 +69,7 @@ write-host "Connection String: $connectionString"
 write-step "Create new website & solution from template"
 dotnet new sln --name $solutionName --output $solutionName
 set-location $solutionName
-dotnet new mvc --auth Individual --name $name --output $name
+dotnet new webapp --auth Individual --name $name --output $name
 dotnet sln add $name
 set-location $name
 
@@ -96,7 +96,7 @@ dotnet ef database Update
 
 write-step "Dump the database"
 $dumpScript = join-path $toolsDir "dump-postgres.ps1"
-& $dumpScript
+& $dumpScript -containerName $dbContainerName
 
 write-step "Create git repo"
 $gitignoreToolInstalled = (dotnet tool list -g | Where-Object {$_.contains("gitignore")} | measure-object).count -eq 1

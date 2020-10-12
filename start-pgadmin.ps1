@@ -6,5 +6,5 @@ param(
 )
 docker run -d  --name $containerName -p "$($localPort):80" -e PGADMIN_DEFAULT_EMAIL=$loginEmail -e PGADMIN_DEFAULT_PASSWORD=$loginPassword dpage/pgadmin4
 write-host "Starting up pgadmin..."
-start-sleep -seconds 5
+start-sleep -seconds 10
 start-process "http://localhost:$localPort"

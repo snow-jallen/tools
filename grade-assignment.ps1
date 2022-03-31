@@ -4,8 +4,8 @@ param(
     [string]$assignmentFolder,
     [switch]$openInVisualStudio,
     [switch]$openInCode,
-    [string]$commitUrl,
-    [string]$student  
+    [Parameter(Mandatory=$true)][string]$commitUrl,
+    [Parameter(Mandatory=$true)][string]$student  
 )
 
 if((test-path $assignmentFolder -PathType Container) -eq $false){
@@ -40,3 +40,5 @@ if($openInVisualStudio) {
 if($openInCode) {
     code .
 }
+
+set-location ..

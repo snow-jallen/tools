@@ -83,7 +83,7 @@ write-step "Add Npgsql package"
 dotnet add package npgsql.entityframeworkcore.postgresql
 
 write-step "Change startup.cs"
-(get-content .\Startup.cs).Replace("UseSqlite","UseNpgsql") | set-content .\Startup.cs
+(get-content .\Program.cs).Replace("UseSqlite","UseNpgsql") | set-content .\Startup.cs
 
 write-step "Replace connection string"
 $json = get-content .\appsettings.json | ConvertFrom-Json

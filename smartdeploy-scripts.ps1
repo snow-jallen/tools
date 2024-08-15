@@ -14,8 +14,11 @@ Import-Csv .\143.csv,.\lib.csv,.\Commons.csv,.\142.csv | %{invoke-command -Compu
 
 
 # Update visual studio on every machine, individually.
-Import-Csv .\143.csv,.\lib.csv,.\Commons.csv,.\142.csv | %{invoke-command -ComputerName engr6hcp5s3.ad.snow.edu -ScriptBlock {
-  dotnet tool update -g dotnet-vs;
-  $Env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-  vs update --all
-}}
+Import-Csv .\143.csv,.\lib.csv,.\Commons.csv,.\142.csv | %{
+  write-host "➡️ Starting $($_.Name)"
+  invoke-command -ComputerName "$($_.Name).ad.snow.edu" -ScriptBlock {
+    dotnet tool update -g dotnet-vs;
+    $Env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    vs update --all
+  }
+}
